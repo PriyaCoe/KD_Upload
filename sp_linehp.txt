@@ -1,0 +1,204 @@
+USE [iotkpi]
+GO
+/****** Object:  StoredProcedure [dbo].[SP_Lineoverview_HourlyProd]    Script Date: 8/23/2024 4:09:10 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER procedure [dbo].[SP_Lineoverview_HourlyProd]
+@CompanyCode nvarchar(100),
+@PlantCode nvarchar(100),
+@LineCode varchar(100),
+@Shift varchar(100),
+@starttime as datetime,
+@endtime as datetime
+As
+begin
+
+	IF OBJECT_ID('tempdb..#TempHour') IS NOT NULL   
+    DROP TABLE #TempHour;
+
+	declare @MachineCode varchar(100)=(select top 1 AssetID from tbl_Assets where EOL=1)
+	declare @Date date=getdate()
+
+	IF OBJECT_ID('tempdb..#temp') IS NOT NULL   
+    DROP TABLE #temp;
+	IF OBJECT_ID('tempdb..#temp') IS NOT NULL   
+    DROP TABLE #Target;
+
+	declare @FromDate datetime,@ToDate datetime
+	
+	Set @FromDate=@starttime
+	Set @ToDate=@endtime
+
+	select  year,month,shift,CreatedDate,UpdatedDate,hour,part into #target from TargetProduction 
+	unpivot
+	(
+	part
+	for hour in ([1],[2],[3],[4],[5],[6],[7],[8])
+	) as MyunpvtData where year=year(getdate())and month=month(getdate())  and shift=@Shift
+	
+	Create table #temp([Shift] varchar(100),[Variant] varchar(100),[Batch] varchar(100),[Batch_sts] varchar(100),stime datetime,etime datetime,okparts int,nokparts int,stoppage int,Machine_code nvarchar(100),uptime int,downtime int,breaktime int,losstime int,plcDisconnect int)
+
+	insert into #temp(Shift,Variant,Batch,Batch_sts,stime,etime,okparts,nokparts,stoppage,Machine_code,uptime,downtime,breaktime,losstime,plcDisconnect)
+
+	select Shift_Id,Variant_code,Batch_code,
+	CASE WHEN LAG(Batch_code,1) over (PARTITION BY Machine_Code order by Time_Stamp) = Batch_code THEN '0' ELSE '1' END 'batch_sts',
+	CASE WHEN LAG(Time_stamp,1) over (PARTITION BY Machine_Code order by Time_Stamp) IS NULL
+	THEN Time_stamp ELSE LAG(Time_stamp,1) over (PARTITION BY Machine_Code order by Time_Stamp) END 'stime',Time_stamp 'etime',
+
+
+	CASE 
+	WHEN LAG(OK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp) IS NULL THEN '0'
+	WHEN CAST(ISNULL(OK_Parts,0) as int) > ISNULL(LAG(OK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) THEN
+	(CAST(ISNULL(OK_Parts,0) as int) - CAST(ISNULL(LAG(OK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) as int))
+	WHEN CAST(ISNULL(OK_Parts,0) as int) < CAST(ISNULL(LAG(OK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) as int) THEN
+	(CAST(ISNULL(OK_Parts,0) as int) - 0)  END 'okparts',
+
+	CASE 
+	WHEN LAG(NOK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp) IS NULL THEN '0'
+	WHEN CAST(ISNULL(NOK_Parts,0) as int) > CAST(ISNULL(LAG(NOK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) as int) THEN
+	(CAST(ISNULL(NOK_Parts,0) as int) - CAST(ISNULL(LAG(NOK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) as int))
+	WHEN CAST(ISNULL(NOK_Parts,0) as int) < CAST(ISNULL(LAG(NOK_Parts,1) over (PARTITION BY Machine_Code order by Time_Stamp),0) as int) THEN
+	(CAST(ISNULL(NOK_Parts,0) as int) - 0)  END 'nokparts'
+
+	,CASE Machine_status WHEN '0' THEN (CASE WHEN CAST(LAG(Machine_status,1) over (PARTITION BY Machine_Code order by Time_stamp) as int) > 1 THEN 1 ELSE 
+	LAG(Machine_status,1) over (PARTITION BY Machine_Code order by Time_stamp) end) else 0 end 'stoppage',Machine_Code,
+	CASE Machine_status WHEN '1' THEN DATEDIFF(SECOND,Time_Stamp,LEAD(Time_Stamp,1) over (PARTITION BY Machine_Code  order by Time_stamp )) else 0 END 'uptime',
+	CASE Machine_status WHEN '0' THEN DATEDIFF(SECOND,Time_Stamp,LEAD(Time_Stamp,1) over (PARTITION BY Machine_Code  order by Time_stamp )) else 0 END 'downtime',
+	CASE Machine_status WHEN '4' THEN DATEDIFF(SECOND,Time_Stamp,LEAD(Time_Stamp,1) over (PARTITION BY Machine_Code  order by Time_stamp )) else 0 END 'breaktime',
+	CASE Machine_status WHEN '3' THEN DATEDIFF(SECOND,Time_Stamp,LEAD(Time_Stamp,1) over (PARTITION BY Machine_Code  order by Time_stamp )) else 0 END 'losstime',
+	CASE Machine_status WHEN '5' THEN DATEDIFF(SECOND,Time_Stamp,LEAD(Time_Stamp,1) over (PARTITION BY Machine_Code  order by Time_stamp )) else 0 END 'plcDisconnect'
+	from Rawtable(Nolock) as aa WHERE  aa.CompanyCode=@CompanyCode AND aa.PlantCode=@PlantCode and aa.Line_Code=@LineCode and aa.Machine_Code=@MachineCode
+	and Time_stamp between @FromDate and @ToDate order by Time_stamp desc
+	 
+	 --select * from #temp
+	IF OBJECT_ID('tempdb..#temp1') IS NOT NULL   
+	DROP TABLE #temp1; 
+
+	Create table #temp1([Shift] varchar(100),[Variant] varchar(100),[Batch] varchar(100),[start] datetime,[end] datetime,okparts int,nokparts int,stoppage int,Machine_code nvarchar(100),[Hour] int,uptime int,downtime int,breaktime int,losstime int,plcDisconnect int)
+
+	insert into #temp1(Machine_code,[Hour],[start],[end],Shift,Variant,Batch,okparts,nokparts,stoppage,uptime,downtime,breaktime,losstime,plcdisconnect)
+	(select Machine_code,DATEPART(hour,etime) 'Hour',
+	MIN(stime) 'start',MAX(etime) 'end',Shift,Variant,Batch,ISNULL(SUM(okparts),0) 'OK_parts',ISNULL(SUM(nokparts),0) 'NOK_Parts',
+	--Sum(okparts) Over ( Partition By Machine_code Order By Variant )
+	sum(stoppage),sum(uptime)/60,sum(downtime)/60,sum(breaktime)/60,SUM(losstime)/60,SUM(plcdisconnect)/60 from #temp 
+	group by Shift,Variant,Batch,DATEPART(hour,etime),Machine_code)
+
+	--select * from #temp1
+	IF OBJECT_ID('tempdb..#temp2') IS NOT NULL   
+	DROP TABLE #temp2;
+
+	Create table #temp2([Shift] varchar(100),[Variant] varchar(100),[Variant_name] varchar(100),[Batch] varchar(100),[start] datetime,[end] datetime,okparts int,nokparts int,stoppage int,cumulative int,tot_time int,Machine_code nvarchar(100),[Hour] int,uptime int,downtime int,breaktime int,losstime int,
+	Target_part int,Target_cumulative int,Availability int,Performance int,Quality int, plcDisconnect int)
+
+	insert into #temp2([start],[end],[Hour],Shift,Variant,[Variant_name],Machine_code,Batch,okparts,nokparts,stoppage,cumulative,tot_time,uptime,downtime,breaktime,losstime,Target_part,Target_cumulative,Availability,Performance,Quality,plcDisconnect)
+	
+	select [start],[end],[Hour],[Shift],a.Variant,b.VariantName,a.Machine_code,Batch,isnull(okparts,0),isnull(nokparts,0),stoppage,isnull(Sum(okparts) Over ( Partition By a.Variant,Batch Order By [start]),0) 'cumulative_production',
+	DATEDIFF(SECOND,[start],[end])/60 'Time(min)',uptime 'Uptime(min)',downtime 'Downtime(min)',breaktime 'Breaktime(min)',losstime 'Losstime(min)',
+	CASE WHEN DATEDIFF(SECOND,[start],[end])=0 THEN 0 ELSE CAST(((DATEDIFF(SECOND,[start],[end])/60) - breaktime) / (b.Ideal_cycletime / 60) as int) END 'Target_part',
+	CASE WHEN DATEDIFF(SECOND,[start],[end])=0 THEN 0 ELSE Sum(CAST(((DATEDIFF(SECOND,[start],[end])/60) - breaktime) / (b.Ideal_cycletime / 60) as int)) Over ( Partition By a.Variant,Batch Order By [start]) END 'Target_cumulative',
+	CASE WHEN ISNULL(downtime,0)=0 THEN 0 ELSE (100-(downtime*100/(uptime+downtime+losstime+breaktime))) END 'Availability', 
+	CASE WHEN ISNULL(uptime,0)=0 THEN 0 ELSE isnull(CAST(( (((okparts) + (nokparts)) * b.Ideal_cycletime) / (uptime*60)) * 100 as int),0) END 'Performance',
+	CASE WHEN ISNULL(okparts,0)=0 THEN 0 ELSE (ISNULL(okparts,0) * 100) / (ISNULL(okparts,0)  + isnull(nokparts,0)) END  'Quality'
+	,plcDisconnect 'DLK_to_PLC_Disconnect(min)'
+	 from #temp1 as a left join tbl_MasterProduct as b on  (a.Variant=b.Variant_Code COLLATE SQL_Latin1_General_CP1_CI_AS  and b.CompanyCode=@CompanyCode and b.PlantCode=@PlantCode 
+	 and b.Machine_Code=@MachineCode and Line_Code=@LineCode)
+
+	 --select * from #temp2
+
+	
+
+	 DROP TABLE IF EXISTS #cumulative_day;
+
+	 create table #cumulative_day([date] date , machinecode nvarchar(50) ,  variant nvarchar(50), okparts int ,  nokparts int,  reworkparts int,
+	 uptime int,downtime int,breaktime int,losstime int,stoppage int,availability int,performance int,quality int,oee int, DLK_to_PLC_Disconnect_time int)
+	 insert into #cumulative_day 
+	 select @date , Machine_code , [Variant] , okparts , nokparts ,'',uptime,downtime,breaktime,
+	 losstime,stoppage,Availability,Performance,Quality,'',plcDisconnect from #temp2 order by batch
+
+	 --select * from #cumulative_day
+
+	 ;WITH NumberedHours AS(
+	 SELECT Hour, DENSE_RANK() OVER (ORDER BY Hour) AS ActualHour
+	 FROM #temp2
+	 )
+	 SELECT DISTINCT Hour, ActualHour
+	 into #TempHour
+	 FROM NumberedHours
+
+	if(select count(*) from #Temp where Shift=@Shift) > 0
+	BEGIN
+		if(select sum(okparts)+sum(nokparts) from #temp1 where Shift=@Shift) >0
+		BEGIN
+			if(select sum(okparts) from #temp1 where Shift=@Shift) >0
+			BEGIN
+				DROP TABLE IF EXISTS #hourBatchCombine
+				DROP TABLE IF EXISTS #hourCumVal
+				DROP TABLE IF EXISTS #hourCumHr
+
+				select a.Shift,a.Variant_name,a.Batch,[start],[end],a.okparts,a.nokparts,a.stoppage,a.cumulative as Cumulative_OkParts,
+				a.tot_time,a.Machine_code,b.ActualHour as Hour,a.Uptime,
+				a.Losstime,a.Downtime,a.Breaktime,a.Target_part,a.Target_cumulative as Cumulative_Target,
+				a.Availability,a.Performance,a.Quality,
+				((a.Availability*a.Performance*a.Quality) / 10000) 'OEE',
+				@Date Dates,concat(a.Hour,a.batch) as Hour_Batch,plcDisconnect as DLK_to_PLC_Disconnect_time,
+				CASE 
+					WHEN a.okparts>=a.Target_part
+					THEN 0
+					ELSE a.Target_part-a.okparts
+				END AS Gap,
+				a.Hour as BatchHour
+				into #hourBatchCombine
+				from #temp2 as a 
+				inner join #TempHour as b on a.Hour=b.Hour
+				where a.Shift=@Shift
+				order by Hour,batch
+
+				--select * from #hourBatchCombine
+
+				Select H.Shift,'K06' Variant_name,
+				sum(okparts) okparts,sum(nokparts) nokparts,sum(stoppage) stoppage,sum(Cumulative_OkParts) Cumulative_OkParts,
+				sum(tot_time) tot_time,Machine_code,H.Hour,sum(Uptime) Uptime,
+				sum(Losstime) Losstime,sum(Downtime) Downtime,sum(Breaktime) Breaktime,T.part  Target_part,sum(Cumulative_Target) Cumulative_Target,
+				Dates,H.Hour Hour_Batch,sum(DLK_to_PLC_Disconnect_time) DLK_to_PLC_Disconnect_time,
+				--sum(Gap) Gap,
+				CASE 
+					WHEN (sum(okparts)+sum(nokparts))>=ROUND((13*sum(tot_time))/60,3)
+					THEN 0
+					ELSE ROUND((13*sum(tot_time))/60,3)-sum(okparts)
+				END AS Gap,
+				BatchHour,
+				(sum(okparts)) totalparts
+				into #hourCumVal
+				from #hourBatchCombine H inner join #target T on H.Hour=T.hour
+				group by [Dates],Machine_code,H.Shift,H.Hour,BatchHour,T.part
+
+				select Min([Start]) [start],Max([End]) [end],Hour
+				into #hourCumHr
+				from #hourBatchCombine
+				group by Hour
+
+				Select [start] Batch,[start],[end],b.*
+				from #hourCumHr a
+				inner join #hourCumVal b on a.Hour=b.Hour
+				Order by a.Hour
+
+			END
+			ELSE
+			BEGIN
+				select 'No Accepted Parts for the entire Shift' as StatusText
+			END
+		END
+		else
+		Begin
+			select 'No Production for the entire Shift' as StatusText
+		END
+	END
+	ELSE
+	BEGIN
+		select 'No Data for the entire Shift' as StatusText
+	END
+
+END
