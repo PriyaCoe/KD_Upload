@@ -1,0 +1,52 @@
+USE [Teal_Master_DB]
+GO
+SET IDENTITY_INSERT [dbo].[tbl_area] ON 
+GO
+INSERT [dbo].[tbl_area] ([Unique_id], [Area_id], [Area_name], [Status], [CompanyCode], [PlantCode], [LineCode]) VALUES (1, N'A001', N'area1', N'Active', N'TVS', N'TVS_Plant03', N'MA_UNIT01')
+GO
+INSERT [dbo].[tbl_area] ([Unique_id], [Area_id], [Area_name], [Status], [CompanyCode], [PlantCode], [LineCode]) VALUES (2, N'A002', N'area2', N'Active', N'TVS', N'TVS_Plant03', N'SA_UNIT02')
+GO
+INSERT [dbo].[tbl_area] ([Unique_id], [Area_id], [Area_name], [Status], [CompanyCode], [PlantCode], [LineCode]) VALUES (3, N'A003', N'area3', N'Active', N'TVS', N'TVS_Plant03', N'PDI_UNIT03')
+GO
+SET IDENTITY_INSERT [dbo].[tbl_area] OFF
+GO
+INSERT [dbo].[tbl_Customer] ([CompanyCode], [CompanyName], [DomainName], [ContactPerson_FirstName], [ContactPerson_LastName], [ContactPerson_Mobile_NO], [ContactPerson_Email], [LocationName], [Address], [City], [state], [Country], [PostalCode], [Logo], [Manager]) VALUES (N'TVS', N'TVS_EngineLine', N'tvs.com', N'Priya', N'Dharshini', CAST(9024304886 AS Numeric(18, 0)), N'priyadharshini_s@titan.co.in', N'HOSUR', N'SIPCOT , HOSUR', N'3737', N'35', N'101', N'635109', N'TVS -motors-logo.png', NULL)
+GO
+SET IDENTITY_INSERT [dbo].[tbl_department] ON 
+GO
+INSERT [dbo].[tbl_department] ([Unique_id], [Dept_id], [Dept_name], [Status], [CompanyCode], [PlantCode], [LineCode], [areacode]) VALUES (1, N'D001', N'Department1', N'Active', N'TVS', N'TVS_Plant03', N'MA_UNIT01', N'A001')
+GO
+INSERT [dbo].[tbl_department] ([Unique_id], [Dept_id], [Dept_name], [Status], [CompanyCode], [PlantCode], [LineCode], [areacode]) VALUES (2, N'D002', N'Department2', N'Active', N'TVS', N'TVS_Plant03', N'SA_UNIT02', N'A002')
+GO
+INSERT [dbo].[tbl_department] ([Unique_id], [Dept_id], [Dept_name], [Status], [CompanyCode], [PlantCode], [LineCode], [areacode]) VALUES (3, N'D003', N'Department3', N'Active', N'TVS', N'TVS_Plant03', N'PDI_UNIT03', N'A003')
+GO
+SET IDENTITY_INSERT [dbo].[tbl_department] OFF
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Ewon_Details] ON 
+GO
+INSERT [dbo].[tbl_Ewon_Details] ([id], [device_id], [devicename], [t2maccount], [t2musername], [t2mpassword], [t2mdeveloperid], [t2mdeviceusername], [t2mdevicepassword], [companycode], [plantcode], [linecode], [status], [deviceip], [ewonurl]) VALUES (1002, N'2', N'IOT2050_2', N'Tealtest', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'Teal_Test01', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'TVS', N'TVS_Plant03', N'PDI_UNIT03', N'Active', N'10.141.45.215', N'iot_2')
+GO
+INSERT [dbo].[tbl_Ewon_Details] ([id], [device_id], [devicename], [t2maccount], [t2musername], [t2mpassword], [t2mdeveloperid], [t2mdeviceusername], [t2mdevicepassword], [companycode], [plantcode], [linecode], [status], [deviceip], [ewonurl]) VALUES (2, N'1', N'IOT2050_1', N'Tealtest', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'Teal_Test01', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'TVS', N'TVS_Plant03', N'PDI_UNIT03', N'Active', N'10.141.45.165', N'iot_1')
+GO
+INSERT [dbo].[tbl_Ewon_Details] ([id], [device_id], [devicename], [t2maccount], [t2musername], [t2mpassword], [t2mdeveloperid], [t2mdeviceusername], [t2mdevicepassword], [companycode], [plantcode], [linecode], [status], [deviceip], [ewonurl]) VALUES (2004, N'3', N'IOT2050_3', N'Tealtest', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'Teal_Test01', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'TVS', N'TVS_Plant03', N'MA_UNIT01', N'Active', N'10.141.44.13', N'iot_3')
+GO
+INSERT [dbo].[tbl_Ewon_Details] ([id], [device_id], [devicename], [t2maccount], [t2musername], [t2mpassword], [t2mdeveloperid], [t2mdeviceusername], [t2mdevicepassword], [companycode], [plantcode], [linecode], [status], [deviceip], [ewonurl]) VALUES (2005, N'4', N'IOT2050_3', N'Tealtest', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'Teal_Test01', N'tealftp', N'VkdWaGJFbHZkREl3TlRBPQ==', N'TVS', N'TVS_Plant03', N'MA_UNIT01', N'Active', N'10.141.44.41', N'iot_3')
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Ewon_Details] OFF
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Function] ON 
+GO
+INSERT [dbo].[tbl_Function] ([Unique_id], [FunctionID], [FunctionName], [FunctionDescription], [ParentPlant], [IsActive], [CompanyCode], [Dept_id]) VALUES (1, N'MA_UNIT01', N'MainAssembly', N'Department1', N'TVS_Plant03', N'Active', N'TVS', N'D001')
+GO
+INSERT [dbo].[tbl_Function] ([Unique_id], [FunctionID], [FunctionName], [FunctionDescription], [ParentPlant], [IsActive], [CompanyCode], [Dept_id]) VALUES (2, N'SA_UNIT02', N'SubAssembly', N'Department2', N'TVS_Plant03', N'Active', N'TVS', N'D002')
+GO
+INSERT [dbo].[tbl_Function] ([Unique_id], [FunctionID], [FunctionName], [FunctionDescription], [ParentPlant], [IsActive], [CompanyCode], [Dept_id]) VALUES (3, N'PDI_UNIT03', N'PDI', N'Department3', N'TVS_Plant03', N'Active', N'TVS', N'D003')
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Function] OFF
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Plant] ON 
+GO
+INSERT [dbo].[tbl_Plant] ([Unique_id], [PlantID], [PlantName], [PlantDescription], [PlantLocation], [TimeZone], [ParentOrganization], [IsActive]) VALUES (1, N'TVS_Plant03', N'TVS_Plant3', N'TVS_EngineLine', N'HOSUR', N'GMT', N'TVS', N'Active')
+GO
+SET IDENTITY_INSERT [dbo].[tbl_Plant] OFF
+GO
