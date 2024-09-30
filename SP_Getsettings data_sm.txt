@@ -1,0 +1,600 @@
+CREATE PROCEDURE [dbo].[SP_GetSettings_data]     
+ @QueryType nvarchar(150),    
+ @Parameter nvarchar(150)=null,    
+ @Parameter1 nvarchar(150)=null,    
+ @Parameter2 nvarchar(150)=null,    
+ @subassembly nvarchar(150)=null,    
+ @Parameter4 nvarchar(150)=null,    
+ @Parameter3 nvarchar(150)=null,    
+ @Parameter5 nvarchar(150)=null,    
+ @Parameter6 nvarchar(150)=null    
+AS    
+BEGIN     
+ SET NOCOUNT ON;    
+     
+ If @QueryType='Customer'    
+  SELECT * FROM tbl_Customer    
+ Else If @QueryType='PropertyGroup'    
+  SELECT * FROM [tbl_SMS_Group] WHERE CompanyCode=@Parameter1 AND [PlantCode]=@Parameter and [Line_code]=@Parameter2    
+      
+ ELSE IF @QueryType='Feedback_details'    
+  SELECT distinct * FROM tbl_Feedback     
+  --WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter    
+    
+  ELSE IF @QueryType='Edit_feedback'    
+  SELECT distinct * FROM tbl_Feedback where FB_ID=CAST(@Parameter3 AS INT)    
+ Else If @QueryType='Assets'    
+  SELECT * FROM tbl_Assets WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and FunctionName=@Parameter2    
+ Else If @QueryType='Function'    
+  SELECT * FROM tbl_Function WHERE CompanyCode=@Parameter1 AND ParentPlant=@Parameter     
+ Else If @QueryType='NewFunction'    
+  SELECT * FROM tbl_Function WHERE CompanyCode=@Parameter1 AND ParentPlant=@Parameter and FunctionID=@Parameter2    
+ Else If @QueryType='Function_details'    
+  SELECT A.FunctionID,A.FunctionName,B.PlantName,A.IsActive,A.Unique_id FROM tbl_Function AS A INNER JOIN tbl_Plant AS B ON A.ParentPlant=B.PlantID    
+ Else If @QueryType='Customer_Function_details'    
+  SELECT A.FunctionID,A.FunctionName,B.PlantName,A.IsActive,A.Unique_id FROM tbl_Function AS A INNER JOIN tbl_Plant AS B ON A.ParentPlant=B.PlantID    
+  and A.CompanyCode=B.ParentOrganization WHERE A.CompanyCode=@Parameter1 AND A.ParentPlant=@Parameter    
+ Else If @QueryType='NewCustomer_Function_details'    
+  SELECT A.FunctionID,A.FunctionName,B.PlantName,A.IsActive,A.Unique_id,c.dept_name FROM tbl_Function AS A INNER JOIN tbl_Plant AS B ON A.ParentPlant=B.PlantID    
+  and A.CompanyCode=B.ParentOrganization left join tbl_department c on c.dept_id=a.dept_id WHERE A.CompanyCode=@Parameter1 AND A.ParentPlant=@Parameter     
+ Else If @QueryType='Customer_Plant'    
+  SELECT * FROM tbl_Plant WHERE ParentOrganization=@Parameter1    
+ Else If @QueryType='Plant'    
+  SELECT * FROM tbl_Plant    
+ ELSE IF @QueryType='Company_Operations'    
+  SELECT * FROM tbl_Operation WHERE CompanyCode=@Parameter1 and Plantcode=@Parameter and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Company_Operations_select'    
+  SELECT * FROM tbl_Operation WHERE CompanyCode=@Parameter1 and Plantcode=@Parameter    
+ ELSE IF @QueryType='NewCompany_Operations_select'    
+  SELECT * FROM tbl_Operation WHERE CompanyCode=@Parameter1 and Plantcode=@Parameter and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Operations'    
+  SELECT * FROM tbl_Operation     
+ ELSE IF @QueryType='Products'    
+  SELECT * FROM tbl_MasterProduct WHERE CompanyCode=@Parameter1 and Line_Code=@Parameter    
+ ELSE IF @QueryType='Holiday'    
+  SELECT * FROM tbl_Holiday WHERE CompanyCode=@Parameter1    
+ --ELSE IF @QueryType='User'    
+ -- SELECT * FROM users  WHERE CompanyCode=@Parameter1    
+ --ELSE IF @QueryType='Roles'    
+ -- SELECT * FROM tbl_role WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter     
+ ELSE IF @QueryType='LineRoles'    
+  SELECT * FROM tbl_Line_Role WHERE CompanyCode=@Parameter1    
+ ELSE IF @QueryType='ShiftSettings'    
+  SELECT * FROM ShiftSetting WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and LineCode=@Parameter2    
+     
+ ELSE IF @QueryType='Assetsdetails'    
+  SELECT AssetID,AssetName,AssetDescription,A.Unique_id,B.FunctionName as 'funname',C.ShiftName as 'sname' FROM tbl_Assets AS A INNER JOIN tbl_Function AS B ON A.FunctionName=B.FunctionID    
+  INNER JOIN ShiftSetting AS C ON A.EOL=C.ID    
+ ELSE IF @QueryType='Customer_Assetsdetails'    
+  SELECT AssetID,AssetName,AssetDescription,A.Unique_id,B.FunctionName as 'funname',A.EOL as 'sname'     
+  FROM tbl_Assets AS A INNER JOIN tbl_Function AS B ON A.FunctionName=B.FunctionID    
+  WHERE A.CompanyCode=@Parameter1 AND B.CompanyCode=@Parameter1     
+  AND A.PlantCode=@Parameter AND B.ParentPlant=@Parameter AND B.FunctionID=@Parameter2    
+ ELSE IF @QueryTYpe='Customer_Product_details'    
+  SELECT A.Variant_Code,A.VariantName,A.VariantDescription,A.M_ID,A.RecipeName,A.CycleTime,A.Cost,A.auto_cycletime as Autocycletime,A.manual_cycletime as Manualcycletime,B.OperationName AS 'OpName',C.AssetName AS 'AsName' FROM tbl_MasterProduct AS A     
+  INNER JOIN tbl_Operation AS B ON A.OperationName=B.OperationID and A.Companycode=B.Companycode and A.PlantCode=B.PlantCode and A.Line_code=B.Line_code    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.Companycode=C.Companycode and A.PlantCode=C.PlantCode and A.Line_code=C.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter    
+ ELSE IF @QueryTYpe='NewCustomer_Product_details'    
+  --SELECT A.Variant_Code,A.VariantName,A.VariantDescription,A.M_ID,A.RecipeName,A.CycleTime,A.Cost,A.auto_cycletime as Autocycletime,A.manual_cycletime as Manualcycletime,B.OperationName AS 'OpName',C.AssetName AS 'AsName' FROM tbl_MasterProduct AS A   
+  
+  --INNER JOIN tbl_Operation AS B ON A.OperationName=B.OperationID and A.Companycode=B.Companycode and A.PlantCode=B.PlantCode and A.Line_code=B.Line_code    
+  --INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.Companycode=C.Companycode and A.PlantCode=C.PlantCode and A.Line_code=C.FunctionName    
+  --WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter And A.Line_code=@Parameter2    
+    
+  SELECT A.Variant_Code,A.VariantName,A.VariantDescription,A.M_ID,A.RecipeName,A.CycleTime,A.Cost,A.auto_cycletime as Autocycletime,A.manual_cycletime as Manualcycletime,A.Ideal_cycletime as IdleCycletime,A.No_of_fixtures as Nooffixtures,    
+  B.OperationName AS 'OpName',C.AssetName AS 'AsName',a.ImageData as ImgData FROM tbl_MasterProduct AS A     
+  INNER JOIN tbl_Operation AS B ON A.OperationName=B.OperationID and A.Companycode=B.Companycode and A.PlantCode=B.PlantCode and A.Line_code=B.Line_code    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.Companycode=C.Companycode and A.PlantCode=C.PlantCode and A.Line_code=C.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter And A.Line_code=@Parameter2    
+    
+ ELSE IF @QueryTYpe='Product_details'    
+  SELECT A.Variant_Code,A.VariantName,A.VariantDescription,A.M_ID,A.RecipeName,A.CycleTime,A.Cost,B.OperationName AS 'OpName',C.AssetName AS 'AsName' FROM tbl_MasterProduct AS A INNER JOIN tbl_Operation AS B ON A.OperationName=B.OperationID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID    
+ ELSE IF @QueryType='Edit_Customer'    
+  SELECT * FROM tbl_Customer WHERE CompanyCode=@Parameter    
+    
+  ELSE IF @QueryType='Get_User'    
+  SELECT UserName FROM Users WHERE UserName=@Parameter    
+    
+ ELSE IF @QueryType='Edit_Function'    
+  SELECT * FROM tbl_Function WHERE Unique_id=@Parameter    
+ ELSE IF @QueryType='Edit_Plant'    
+  SELECT * FROM tbl_Plant WHERE Unique_id=@Parameter     
+ ELSE IF @QueryType='Edit_Operation'    
+  SELECT * FROM tbl_Operation WHERE Unique_id=@Parameter     
+ ELSE IF @QueryType='Edit_Assets'    
+  SELECT * FROM tbl_Assets WHERE Unique_id=@Parameter    
+ ELSE IF @QueryType='Edit_Products'    
+  SELECT * FROM tbl_MasterProduct WHERE M_ID=@Parameter     
+ ELSE IF @QueryType='Edit_holiday'    
+  SELECT HolidayReason,CONVERT(nvarchar(150),Date,105) AS 'Date',HolidayID,Unique_id FROM tbl_Holiday WHERE Unique_id=@Parameter    
+ ELSE IF @QueryType='Customer_Holiday_details'    
+  SELECT A.HolidayID,A.HolidayReason,B.PlantName,A.Unique_id,A.Date,CONVERT(nvarchar(150),A.Date,105) AS 'Dates'    
+   FROM tbl_Holiday AS A INNER JOIN tbl_Plant AS B ON A.PlantID=B.PlantID    
+   WHERE A.CompanyCode=@Parameter1 AND B.ParentOrganization=@Parameter1    
+ ELSE IF @QueryType='Holiday_details'    
+  SELECT A.HolidayID,A.HolidayReason,B.PlantName,A.Unique_id,A.Date,CONVERT(nvarchar(150),A.Date,105) AS 'Dates'    
+   FROM tbl_Holiday AS A INNER JOIN tbl_Plant AS B ON A.PlantID=B.PlantID    
+ --ELSE IF @QueryType='Role_details'    
+ -- SELECT A.RoleID,A.RoleName,A.RoleDescription FROM tbl_Role AS A     
+ -- WHERE A.CompanyCode=@Parameter1 and PlantCode=@Parameter and Line_code=@Parameter2    
+ ELSE IF @QueryType='Customer_Skill_details'    
+  SELECT * FROM tbl_Skill WHERE CompanyCode=@Parameter1    
+  --SELECT [Unique_id],[SkillName],(select [FunctionName] from tbl_Function where FunctionID=[Line_Code])Line_Code FROM [dbo].[tbl_Skill] WHERE CompanyCode=@Parameter1    
+ ELSE IF @QueryType='NewCustomer_Skill_details'    
+  SELECT * FROM tbl_Skill WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Skill_details'    
+  SELECT * FROM tbl_Skill     
+ ELSE IF @QueryType='Skills'    
+  SELECT * FROM tbl_Skill WHERE CompanyCode=@Parameter1 and Line_Code=@Parameter    
+ ELSE IF @QueryType='SkillsForUserSettings'    
+  SELECT * FROM tbl_Skill WHERE CompanyCode=@Parameter1     
+ --ELSE IF @QueryType='Edit_role'    
+ --BEGIN    
+ -- SELECT * FROM tbl_Role WHERE RoleID=@Parameter AND CompanyCode=@Parameter1    
+ -- SELECT * FROM tbl_Permission WHERE RoleID=@Parameter AND CompanyCode=@Parameter1    
+ --END    
+ ELSE IF @QueryType='Edit_Skill'    
+  SELECT * FROM tbl_Skill WHERE Unique_id=@Parameter     
+ --ELSE IF @QueryType='Edit_User'    
+ -- SELECT * FROM Users WHERE UserID=@Parameter AND CompanyCode=@Parameter1     
+ --ELSE IF @QueryType='Customer_User_details'    
+ -- --SELECT A.UserID,A.FirstName,A.LastName,A.PhoneNo,A.Email,C.SkillName,D.RoleName,A.Unique_id FROM Users AS A  INNER JOIN tbl_Skill AS C ON A.SkillSet=C.Skill_ID(MODIFIED BY KRISHNA 12-03-2020)    
+ -- SELECT a.UserName,A.UserID,A.FirstName,A.LastName,A.PhoneNo,A.Email,C.SkillName,D.RoleName,A.Unique_id,l.RoleName as LineRoleID FROM Users AS A  INNER JOIN tbl_Skill AS C ON A.SkillSet=C.Skill_ID    
+ --  INNER JOIN tbl_Role AS D ON A.RoleID=D.RoleID left Join tbl_Line_Role l on l.roleid=a.LineRoleID    
+ --  WHERE A.CompanyCode=@Parameter AND C.CompanyCode=@Parameter AND D.CompanyCode=@Parameter     
+ --ELSE IF @QueryType='User_details'    
+ -- SELECT A.UserID,A.FirstName,A.LastName,A.PhoneNo,A.Email,C.SkillName,D.RoleName FROM Users AS A LEFT JOIN tbl_Skill AS C ON A.SkillSet=C.Skill_ID    
+ --  LEFT JOIN tbl_Role AS D ON A.RoleID=D.RoleID    
+ --ELSE IF @QueryType='Customer_User_details'    
+ -- SELECT A.UserID,A.FirstName,A.LastName,A.PhoneNo,A.Email,C.SkillName,D.RoleName FROM Users AS A LEFT JOIN tbl_Skill AS C ON A.SkillSet=C.Skill_ID    
+ --  LEFT JOIN tbl_Role AS D ON A.RoleID=D.RoleID    
+ --  WHERE A.CompanyCode=@Parameter AND A.PlantCode=@Parameter1    
+ ELSE IF @QueryType='Customer_Operator_skill'    
+  SELECT A.OperatorID,A.ScoreValue,B.SkillName AS 'SName',O_ID,C.OperatorName FROM tbl_OperatorSkillMatrix AS A     
+  INNER JOIN tbl_skill AS B ON A.SkillName=B.Skill_ID     
+  INNER JOIN tbl_operator AS C ON A.OperatorID=C.OperatorID    
+  WHERE A.CompanyCode=@Parameter1 AND B.CompanyCode=@Parameter1 AND C.CompanyCode=@Parameter1     
+ ELSE IF @QueryType='NewCustomer_Operator_skill'    
+  SELECT A.OperatorID,A.ScoreValue,B.SkillName AS 'SName',O_ID,C.OperatorName FROM tbl_OperatorSkillMatrix AS A     
+  INNER JOIN tbl_skill AS B ON A.SkillName=B.Skill_ID     
+  INNER JOIN tbl_operator AS C ON A.OperatorID=C.OperatorID    
+  WHERE A.CompanyCode=@Parameter1 AND B.CompanyCode=@Parameter1 AND C.CompanyCode=@Parameter1 AND B.Line_Code=@Parameter2 And B.PlantCode=@Parameter    
+ ELSE IF @QueryType='Operator_skill'    
+  SELECT A.OperatorID,A.ScoreValue,B.SkillName AS 'SName',O_ID FROM tbl_OperatorSkillMatrix AS A     
+  INNER JOIN tbl_skill AS B ON A.SkillName=B.Skill_ID    
+ ELSE IF @QueryType='Edit_Operator_skill'    
+  SELECT * FROM tbl_OperatorSkillMatrix WHERE O_ID=@Parameter    
+ ELSE IF @QueryType='Customer_Alarm_details'    
+  SELECT A.Alarm_ID,A.A_ID,A.Alarm_Description,B.FunctionName,C.AssetName FROM AlarmTable_Setting AS A INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.CompanyCode=B.CompanyCode and B.CompanyCode=C.CompanyCode and A.PlantCode=B.ParentPlant and    
+  C.PlantCode=B.ParentPlant and A.Line_code=B.FUnctionID and B.FUnctionID=C.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter    
+ ELSE IF @QueryType='NewCustomer_Alarm_details'    
+  SELECT A.Alarm_ID,A.A_ID,A.Alarm_Description,B.FunctionName,B.AssetName,C.FileName FROM AlarmTable_Setting AS A      
+  INNER JOIN tbl_Assets AS b ON A.Machine_Code=b.AssetID and A.Line_Code=B.FunctionName and A.CompanyCode=B.CompanyCode     
+  and A.PlantCode=B.PlantCode  LEFT JOIN tbl_UploadManual as C ON A.Help= CAST(C.Unique_id AS nvarchar)    
+ ELSE IF @QueryType='Alarm_details'    
+  SELECT A.Alarm_ID,A.A_ID,A.Alarm_Description,B.FunctionName,C.AssetName FROM AlarmTable_Setting AS A INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID    
+      
+ ELSE IF @QueryType='Edit_alarm'    
+  SELECT * FROM AlarmTable_Setting WHERE A_ID=@Parameter    
+ ELSE IF @QueryType='Edit_Rejection'    
+  SELECT * FROM tbl_Rejection WHERE R_ID=@Parameter    
+ ELSE IF @QueryType='Customer_Rejectiondetails'    
+ BEGIN    
+  SELECT A.R_ID,A.RejectionCode,A.RejectionName,A.RejectionDescription,B.VariantName AS 'PName',C.OperationName AS 'OName',D.AssetName AS 'AName'    
+  FROM tbl_Rejection AS A INNER JOIN tbl_MasterProduct AS B ON A.ProductName=B.Variant_Code and A.CompanyCode=B.CompanyCode and A.PlantCode=B.PlantCode and A.Line_code=B.Line_Code    
+  INNER JOIN tbl_Operation AS C ON A.OperationName=C.OperationID and  A.CompanyCode=C.CompanyCode and A.PlantCode=C.PlantCode and A.Line_code=C.Line_Code    
+  INNER JOIN tbl_Assets AS D ON A.AssetName=D.AssetID and A.CompanyCode=D.CompanyCode and A.PlantCode=D.PlantCode and A.Line_code=D.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter    
+    
+ END    
+ ELSE IF @QueryType='NewCustomer_Rejectiondetails'    
+ BEGIN    
+  SELECT A.R_ID,A.RejectionCode,A.RejectionName,A.RejectionDescription,B.VariantName AS 'PName',C.OperationName AS 'OName',D.AssetName AS 'AName'    
+  FROM tbl_Rejection AS A INNER JOIN tbl_MasterProduct AS B ON A.ProductName=B.Variant_Code and A.CompanyCode=B.CompanyCode and A.PlantCode=B.PlantCode and A.Line_code=B.Line_Code    
+  INNER JOIN tbl_Operation AS C ON A.OperationName=C.OperationID and  A.CompanyCode=C.CompanyCode and A.PlantCode=C.PlantCode and A.Line_code=C.Line_Code    
+  INNER JOIN tbl_Assets AS D ON A.AssetName=D.AssetID and A.CompanyCode=D.CompanyCode and A.PlantCode=D.PlantCode and A.Line_code=D.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter and A.Line_code=@Parameter2    
+    
+ END    
+ ELSE IF @QueryType='Rejection_details'    
+  SELECT A.R_ID,A.RejectionCode,A.RejectionName,A.RejectionDescription,B.VariantName AS 'PName',C.OperationName AS 'OName',D.AssetName AS 'AName'     
+  FROM tbl_Rejection AS A INNER JOIN tbl_MasterProduct AS B ON A.ProductName=B.Variant_Code    
+  INNER JOIN tbl_Operation AS C ON A.OperationName=C.OperationID    
+  INNER JOIN tbl_Assets AS D ON A.AssetName=D.AssetID    
+ ELSE IF @QueryType='Edit_Loss'    
+  SELECT * FROM LossesTable_Setting WHERE ID=@Parameter    
+ ELSE IF @QueryType='Customer_Lossesdetails'    
+  SELECT A.Loss_ID,A.ID,A.Loss_Description,B.FunctionName,C.AssetName FROM LossesTable_Setting AS A INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.CompanyCode=B.CompanyCode and B.CompanyCode=C.CompanyCode and A.PlantCode=B.ParentPlant and    
+  C.PlantCode=B.ParentPlant and A.Line_code=B.FUnctionID and B.FUnctionID=C.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter    
+ ELSE IF @QueryType='NewCustomer_Lossesdetails'    
+  SELECT A.Loss_ID,A.ID,A.Loss_Description,B.FunctionName,C.AssetName FROM LossesTable_Setting AS A     
+  INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.CompanyCode=@Parameter1  and A.PlantCode=@Parameter    
+      
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter and A.Line_code=@Parameter2    
+ ELSE IF @QueryType='Losses_details'    
+  SELECT A.Loss_ID,A.ID,A.Loss_Description,B.FunctionName,C.AssetName FROM LossesTable_Setting AS A INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID    
+ ELSE IF @QueryType='Edit_tool'    
+  --SELECT * FROM tbl_toollist WHERE ID=@Parameter    
+  SELECT t.ID,t.Line_Code,t.ToolID,t.ToolName,t.Make,t.UOM,t.Part_number,t.Classification,t.Machine_Code,t.Conversion_parameter,t.CompanyCode,t.PlantCode,t.SubAssembly,t.SerialNo,    
+  tc.RatedLifeCycle,tc.RecommendationText FROM tbl_toollist as t    
+  inner join tbl_toollist_child as tc on t.ToolID=tc.ToolID WHERE t.ID=@Parameter and t.ToolID=@Parameter1 and tc.RatedLifeCycle=@Parameter2    
+     
+ ELSE IF @QueryType='Customer_Toolsdetails'    
+  SELECT A.ToolID,A.ID,A.ToolName,B.FunctionName,C.AssetName FROM tbl_toollist AS A     
+  INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID and A.CompanyCode=B.CompanyCode and A.PlantCode=B.ParentPlant    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.CompanyCode=C.CompanyCode and A.PlantCode=C.PlantCode and A.Line_code=C.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter     
+ ELSE IF @QueryType='NewCustomer_Toolsdetails'    
+  SELECT A.ToolID,A.ID,A.ToolName,B.FunctionName,C.AssetName,D.RatedLifeCycle,D.RecommendationText FROM tbl_toollist AS A     
+  INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID and A.CompanyCode=B.CompanyCode and A.PlantCode=B.ParentPlant    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID and A.CompanyCode=C.CompanyCode and A.PlantCode=C.PlantCode and A.Line_code=C.FunctionName    
+  Inner JOIN tbl_toollist_child as d on A.ToolID=D.ToolID    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter and A.Line_code=@Parameter2 and A.Active='1'    
+ ELSE IF @QueryType='Tools_details'    
+  SELECT A.ToolID,A.ID,A.ToolName,B.FunctionName,C.AssetName FROM tbl_toollist AS A INNER JOIN tbl_Function AS B ON A.Line_Code=B.FunctionID    
+  INNER JOIN tbl_Assets AS C ON A.Machine_Code=C.AssetID    
+ ELSE IF @QueryType='Edit_Operator'    
+  SELECT * FROM tbl_Operator WHERE OP_ID=@Parameter    
+ ELSE IF @QueryType='Customer_Operator_details'    
+  SELECT A.OP_ID,A.OperatorName,A.OperatorID,B.AssetName AS 'AName' FROM tbl_Operator AS A     
+  INNER JOIN tbl_Assets AS B ON A.AssetName=B.AssetID and A.CompanyCode=B.CompanyCode and A.PlantCode=b.PlantCode and a.line_code=b.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter     
+ ELSE IF @QueryType='NewCustomer_Operator_details'    
+  SELECT A.OP_ID,A.OperatorName,A.OperatorID,B.AssetName AS 'AName' FROM tbl_Operator AS A     
+  INNER JOIN tbl_Assets AS B ON A.AssetName=B.AssetID and A.CompanyCode=B.CompanyCode and A.PlantCode=b.PlantCode and a.line_code=b.FunctionName    
+  WHERE A.CompanyCode=@Parameter1 AND A.PlantCode=@Parameter and a.line_code=@Parameter2    
+ ELSE IF @QueryType='Operator_details'    
+  SELECT A.OP_ID,A.OperatorName,A.OperatorID,B.AssetName AS 'AName' FROM tbl_Operator AS A     
+  INNER JOIN tbl_Assets AS B ON A.AssetName=B.AssetID     
+ ELSE IF @QueryType='Customer_Shift_details'    
+  SELECT * FROM ShiftSetting WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter    
+ ELSE IF @QueryType='NewCustomer_Shift_details'    
+  SELECT * FROM ShiftSetting WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and LineCode=@Parameter2    
+ ELSE IF @QueryType='Shift_details'    
+  SELECT * FROM ShiftSetting     
+ ELSE IF @QueryType='Edit_Shift'    
+  SELECT * FROM ShiftSetting WHERE ID=@Parameter    
+ ELSE IF @QueryType='Edit_Break'    
+  SELECT * FROM BreakSetting WHERE ID=@Parameter    
+ ELSE IF @QueryType='Operators'    
+  SELECT * FROM tbl_Operator WHERE CompanyCode=@Parameter1 and Line_Code=@Parameter    
+ ELSE IF @QueryType='Country_list'    
+  SELECT * FROM tbl_Countries    
+ ELSE IF @QueryTYpe='State_list'    
+  SELECT * FROM tbl_States WHERE Country_id=@Parameter    
+ ELSE IF @QueryType='City_list'    
+  SELECT * FRom tbl_Cities WHERE State_id=@Parameter    
+ ELSE IF @QueryType='Dept_details'    
+  SELECT * FROM tbl_department WHERE CompanyCode=@Parameter1 and  PlantCode=@Parameter    
+ ELSE IF @QueryType='Area_details'    
+  SELECT * FROM tbl_area WHERE CompanyCode=@Parameter1 and  PlantCode=@Parameter    
+ ELSE IF @QueryType='newDept_details'    
+  SELECT d.Unique_id,d.Dept_id,d.Dept_name,d.Status,d.CompanyCode,d.LineCode,d.PlantCode,a.Area_name FROM tbl_department d left join tbl_area a on d.areacode=a.area_id WHERE d.CompanyCode=@Parameter1 and  d.PlantCode=@Parameter     
+ ELSE IF @QueryType='Edit_Dept'    
+  SELECT * FROM tbl_department WHERE Unique_id=@Parameter    
+ ELSE IF @QueryType='Edit_Area'    
+  SELECT * FROM tbl_area WHERE Unique_id=@Parameter    
+     
+     
+  ELSE IF @QueryType='Groups_Users'    
+     SELECT * FROM tbl_SMS_Group WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and Line_code=@Parameter2    
+      
+      
+      
+    
+ ELSE IF @QueryType='Edit_UserGroup'    
+  BEGIN    
+   SELECT * FROM tbl_SMS_Group WHERE GroupID=@Parameter AND CompanyCode=@Parameter1    
+   SELECT * FROM tbl_SMS_GroupPermission WHERE GroupID=@Parameter AND CompanyCode=@Parameter1    
+  END    
+ Else IF @QueryType='Alert_details'    
+  Begin    
+   --Select * from tbl_alert_settings where CompanyCode=@Parameter1 AND PlantCode=@Parameter and Line_code=@Parameter2    
+   SELECT [alertID],[Machine_Code],[Alert_Name],[P1_Variable],[P1_PG],[P1_Param],    
+   [P2_Variable],[P2_PG],[P2_Param],[Expression],[Constant],[DurationForAlert],[Group_id],[MessageText]    
+   ,[CompanyCode],[PlantCode],[Line_Code],[Remarks],[DurationForRepetetion]    
+   ,unique_id      
+   FROM [dbo].[tbl_alert_settings]    
+   where CompanyCode=@Parameter1 AND PlantCode=@Parameter and Line_code=@Parameter2    
+  END    
+ Else IF @QueryType='Edit_alert'    
+  Begin    
+   --Select * from tbl_alert_settings where unique_id=@Parameter    
+   SELECT a.[Machine_Code],a.[Alert_Name],a.[P1_Variable],a.[P1_PG],a.[P1_Param],a.[P2_Variable],a.[P2_PG],a.[P2_Param]    
+      ,a.[Expression],a.[Constant],a.[DurationForAlert],b.[Groupid1],b.[Groupid2],b.[Groupid3],a.[MessageText],    
+      a.[CompanyCode],a.[PlantCode],a.[Line_Code],a.[Remarks],a.[DurationForRepetetion],a.[alertID] ,a.[unique_id]    
+   FROM [dbo].[tbl_alert_settings] a    
+   join [dbo].[tbl_GroupEscalation] b on a.[alertID]=b.[AlertID]     
+   where a.unique_id=@Parameter    
+  END    
+    
+  ---Update the below code in to SP_GetSettings_data Procedure    
+ Else If @QueryType='Alert_details_webservice'    
+ BEGIN    
+  SELECT a.AlertID,a.Group_id,a.DurationForRepetetion,b.P_Values as 'val1',a.Constant as 'val2',a.Alert_Name,    
+  a.Expression,a.DurationForAlert,a.MessageText,a.CompanyCode,a.PlantCode,a.Line_Code,a.Machine_Code,b.StartTime,c.[AssetName]    
+  FROM tbl_alert_settings as a inner join tbl_Live_Values_Alert as b on a.AlertID=b.AlertID    
+  join [tbl_Assets] c on a.Machine_Code=c.[AssetID] and a.CompanyCode=c.CompanyCode and a.PlantCode=c.PlantCode and a.Line_Code=c.[FunctionName]    
+ END    
+    
+ Else If @QueryType='Diagnostic_details'     
+ BEGIN    
+  SELECT [Unique_ID] ,[Device_ID] as DeviceID,[Device_Ref] as DeviceRef,[Part_Number] as partnumber    
+      ,[IO_Server] as ioserver,[Mac_Address] as macaddress,[Connecetd_to] as connectedto    
+      ,[Intsalled] as installed,[Remarks] as remarks,[make] as make,    
+   [gateway]=(case when [gateway]=1 then 'Yes' else 'No' end)     
+  FROM [dbo].[Diagnostics_Settings]     
+  where CompanyCode=@Parameter1 AND PlantCode=@Parameter and LineCode=@Parameter2    
+ END    
+    
+ Else If @QueryType='Edit_diagnostics_details'     
+ BEGIN    
+  SELECT [Unique_ID] ,[Device_ID] as DeviceID,[Device_Ref] as DeviceRef,[Part_Number] as partnumber    
+      ,[IO_Server] as ioserver,[Mac_Address] as macaddress,[Connecetd_to] as connectedto    
+      ,[Intsalled] as installed,[Remarks] as remarks,[make] as make,[gateway] as gateway    
+  FROM [dbo].[Diagnostics_Settings]     
+  where [Unique_ID]=@Parameter    
+ END    
+    
+ ELSE IF @QueryType='Edit_MISGroup'    
+  BEGIN    
+  SELECT * FROM tbl_MIS_Group WHERE GroupID=@Parameter AND CompanyCode = @Parameter1 and Line_Code=@Parameter2    
+  SELECT * FROM tbl_MIS_GroupPermission WHERE GroupID=@Parameter AND CompanyCode = @Parameter1 and Line_Code=@Parameter2    
+  END    
+    
+ ELSE IF @QueryType='Get_MISGroup'    
+  SELECT * FROM tbl_MIS_Group WHERE CompanyCode=@Parameter1 AND PlantCode = @Parameter and Line_Code=@Parameter2    
+    
+ ELSE IF @QueryType='Get_MISReport'    
+  SELECT a.[Unique_id],a.[GroupID],a.[ReportID],a.[Shift1],a.[Shift2],a.[Shift3],a.[Days]    
+        ,a.[CompanyCode],a.[PlantCode],a.[line_code],b.groupname    
+  FROM [dbo].[tbl_MISReports] a join [tbl_MIS_Group] b on a.[GroupID]=b.[GroupID]     
+  WHERE a.CompanyCode=@Parameter1 AND a.PlantCode = @Parameter and a.Line_Code=@Parameter2    
+    
+ ELSE IF @QueryType='Edit_ReportGroup'    
+  BEGIN    
+  SELECT * FROM tbl_MISReports WHERE ReportID=@Parameter AND CompanyCode = @Parameter1 and Line_Code=@Parameter2    
+  SELECT * FROM tbl_MISReport_Permission WHERE ReportID=@Parameter AND CompanyCode = @Parameter1 and Line_Code=@Parameter2    
+  END    
+    
+ ELSE IF @QueryType='Get_Reports'    
+  SELECT * FROM tbl_MIS_Report_list WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and Line_Code=@Parameter2    
+    
+ ELSE IF @QueryType='Delete_MISGroup'    
+  BEGIN    
+  DELETE FROM tbl_MIS_Group WHERE GroupID=@Parameter    
+  DELETE FROM tbl_MIS_GroupPermission WHERE GroupID=@Parameter    
+  END    
+    
+ ELSE IF @QueryType='Delete_ReportGroup'    
+  BEGIN    
+  DELETE FROM tbl_MISReports WHERE ReportID=@Parameter    
+  DELETE FROM tbl_MISReport_Permission WHERE ReportID=@Parameter    
+  END    
+ Else If @QueryType='Subassembly_details'    
+  BEGIN    
+   Select a.Unique_id as Unique_id,a.subassemblyid as Subassembly_id,a.SubassemblyName as Subassembly_name,b.AssetID as MachineCode from tbl_subassembly A INNER JOIN tbl_Assets AS B ON A.ParentPlant=B.Plantcode    
+  and A.CompanyCode=B.CompanyCode and A.ParentPlant=B.Plantcode and B.Functionname=A.ParentLine WHERE A.CompanyCode=@Parameter1 AND A.ParentPlant=@Parameter and A.ParentLine=@Parameter2    
+  END    
+ELSE IF @QueryType='LineRole_details'    
+  SELECT * FROM tbl_Line_Role WHERE CompanyCode=@Parameter1     
+  ELSE IF @QueryType='Edit_line_role'    
+ BEGIN    
+  SELECT * FROM tbl_Line_Role WHERE RoleID=@Parameter AND CompanyCode=@Parameter1    
+  SELECT * FROM tbl_line_Permission WHERE RoleID=@Parameter AND CompanyCode=@Parameter1    
+ END    
+    
+    
+ ELSE IF @QueryType='Get_QReason'    
+  SELECT a.Unique_id,a.Reason,b.AssetName as 'Machine' FROM tbl_Quality_Reason_Setting as a inner join tbl_Assets as b on a.Machine=b.AssetID    
+  WHERE a.CompanyCode=@Parameter AND a.PlantCode=@Parameter1 AND b.CompanyCode=@Parameter AND b.PlantCode=@Parameter1    
+  ELSE IF @QueryType='Edit_QReson'    
+  SELECT * FROM tbl_Quality_Reason_Setting WHERE Unique_id=@Parameter    
+  ELSE IF @QueryType='Delete_QReson'    
+  DELETE FROM tbl_Quality_Reason_Setting WHERE Unique_id=@Parameter    
+  ELSE IF @QueryType='Get_machine'    
+  SELECT * FROM tbl_Assets where CompanyCode=@Parameter AND PlantCode=@Parameter1 and FunctionName=@Parameter2    
+  ELSE IF @QueryType='Get_Operators'    
+  SELECT * FROM tbl_Operator WHERE AssetName=@Parameter AND CompanyCode=@Parameter1 AND PlantCode=@Parameter2    
+  ELSE IF @QueryType='Get_Variants'    
+  SELECt * FROM tbl_MasterProduct WHERE Machine_Code=@Parameter AND CompanyCode=@Parameter1 AND PlantCode=@Parameter2 and line_code=@Parameter4    
+  ELSE IF @QueryType='Get_Reasons'    
+  SELECT Reject_Reason FROM tbl_Product_Reject_reason WHERE Machine_code=@Parameter AND CompanyCode=@Parameter1 AND PlantCode=@Parameter2 and Reject_Reason != '' group by Reject_Reason    
+  ELSE IF @QueryType='Get_Subassembly'    
+  --SELECT SubassemblyName FROM tbl_Product_Reject_reason WHERE Machine_code=@Parameter AND CompanyCode=@Parameter1 AND PlantCode=@Parameter2 group by SubassemblyName    
+  SELECT SubassemblyName FROM tbl_Subassembly WHERE CompanyCode=@Parameter1 and ParentPlant=@Parameter2 and ParentLine=@Parameter    
+  ELSE IF @QueryType='Get_Reports_list'    
+  SELECT * FROM tbl_reports_list where Category=@Parameter --AND CompanyCode=@Parameter1 AND PlantCode=@Parameter2     
+    
+    
+  ELSE IF @QueryType='Get_LossCategory'    
+  SELECT * FROM tbl_losscategory where PlantCode=@Parameter and CompanyCode=@Parameter1  and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Get_LossType'    
+  SELECT * FROM  tbl_losstype WHERE PlantCode=@Parameter and CompanyCode=@Parameter1  and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Get_loss_details'    
+  SELECT * FROM LossesTable_Setting where CompanyCode=@Parameter1 and PlantCode=@Parameter and Loss_Category=@Parameter2 and(@Subassembly is null or Subassambly=@Subassembly)    
+ ELSE IF @QueryType='Get_subassambly'    
+  SELECT * FROM tbl_Subassembly WHERE CompanyCode=@Parameter1 and ParentPlant=@Parameter and ParentMachine=@Parameter2    
+ ELSE IF @QueryType='Loss_category'    
+  SELECT * FROM tbl_losscategory WHERE PlantCode=@Parameter and CompanyCode=@Parameter1  and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Edit_Loss_category'    
+  SELECT * FROM tbl_losscategory WHERE ID=@Parameter     
+ ELSE IF @QueryType='Loss_type'    
+  SELECT * FROM tbl_losstype WHERE PlantCode=@Parameter and CompanyCode=@Parameter1  and Line_Code=@Parameter2    
+ ELSE IF @QueryType='Edit_Loss_type'    
+  SELECT * FROM tbl_losstype WHERE ID=@Parameter    
+ ELSE IF @QueryType='Get_cycle_time'    
+  IF @Parameter2 = 'All'    
+  BEGIN    
+   SELECT Movement,Type,Cycle_time FROM tbl_cycle_time WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter and if_applicable='Y' group by Movement,Type,Cycle_time    
+  END    
+  ELSE    
+  BEGIN    
+   SELECT * FROM tbl_cycle_time WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter and Variant=@Parameter2    
+  END    
+      
+ ELSE IF @QueryType='Edit_cycle_time'    
+  IF @Parameter2 = 'All'    
+  BEGIN    
+   SELECT Movement,Type,Cycle_time FROM tbl_cycle_time WHERE Movement=@Parameter and Type=@Parameter1 and if_applicable='Y' group by Movement,Type,Cycle_time    
+  END    
+  ELSE    
+  BEGIN    
+   SELECT * FROM tbl_cycle_time WHERE ID=@Parameter    
+  END    
+ Else If @QueryType='Subassembly_details'    
+  BEGIN    
+   Select A.Unique_id as Unique_id,A.subassemblyid as Subassembly_id,A.SubassemblyName as Subassembly_name,b.AssetName as MachineCode from tbl_subassembly A INNER JOIN tbl_Assets AS B ON B.Plantcode=A.ParentPlant    
+  and A.CompanyCode=B.CompanyCode and A.ParentPlant=B.Plantcode and B.Functionname=A.ParentLine WHERE A.CompanyCode=@Parameter1 AND A.ParentPlant=@Parameter and A.ParentLine=@Parameter2    
+  END    
+    
+ ELSE IF @QueryType='Edit_Subassembly'    
+  SELECT * FROM tbl_Subassembly WHERE Unique_id=@Parameter    
+    
+  --ELSE IF @QueryType='Get_Movement'     
+  --SELECT * FROM tbl_cycle_time where CompanyCode=@Parameter1 and PlantCode=@Parameter and     
+  --Machine=@Parameter2 and Variant=@Parameter3    
+ ELSE IF @QueryType='Get_cycle_time'    
+  IF @Parameter2 = 'All'    
+  BEGIN    
+   SELECT Movement,Type,SUM(Cycle_time) 'Cycle_time' FROM tbl_cycle_time WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter and if_applicable='Y'     
+   and Machine=@Parameter3 and Line_Code=@Parameter6 and variant = (select Top(1) Variant from tbl_cycle_time WHERE  CompanyCode=@Parameter1 and PlantCode=@Parameter    
+   and if_applicable='Y'     
+   and Machine=@Parameter3 and Line_Code=@Parameter6  order by ID desc)    
+   group by Movement,Type    
+  END    
+  ELSE    
+  BEGIN    
+   SELECT * FROM tbl_cycle_time WHERE CompanyCode=@Parameter1 and PlantCode=@Parameter and Variant=@Parameter2 and Line_Code=@Parameter6    
+  END    
+      
+ELSE IF @QueryType='Edit_cycle_time'    
+  IF @Parameter2 = 'All'    
+  BEGIN    
+   SELECT Movement,Type,Cycle_time FROM tbl_cycle_time WHERE Movement=@Parameter and Type=@Parameter1 and Machine=@Parameter3    
+   and CompanyCode=@Parameter4 and PlantCode=@Parameter5  and Line_Code=@Parameter6 and if_applicable='Y' group by Movement,Type,Cycle_time    
+  END    
+  ELSE    
+  BEGIN    
+   SELECT * FROM tbl_cycle_time WHERE ID=@Parameter    
+  END    
+ ELSE IF @QueryType='Get_Movement'    
+  SELECT Distinct operation as Movement FROM Cycletime_Daily where CompanyCode=@Parameter1 and PlantCode=@Parameter and MachineCode=@Parameter2 and VariantCode=@Parameter3 and Operation not like  'Others%' and LineCode=@Parameter6    
+      
+      
+      
+      
+ ElSE IF @QueryType='Delete_cycletime'    
+ BEGIN    
+  IF @Parameter2 = 'All'    
+  BEGIN    
+   DELETE FROM tbl_cycle_time WHERE Movement=@Parameter and Type=@Parameter1 and Machine=@Parameter3 and CompanyCode=@Parameter4     
+   and PlantCode=@Parameter5 and Line_Code=@Parameter6 and if_applicable='Y'    
+  END    
+  ELSE    
+  BEGIN    
+   DELETE FROM tbl_cycle_time WHERE ID=@Parameter    
+  END    
+ END    
+    
+ ELSE IF @QueryType='Break_details'    
+  SELECT * FROM BreakSetting WHERE CompanyCode=@Parameter1 AND PlantCode=@Parameter and LineCode=@Parameter2    
+    
+ --Skill Category    
+ ELSE IF @QueryType='Get_skill_category'    
+  SELECT * FROM tbl_skill_category where PlantCode=@Parameter and CompanyCode=@Parameter1 order by Category_name asc    
+ ELSE IF @QueryType='Edit_skill_category'    
+  SELECT * FROM tbl_skill_category where ID=@Parameter    
+ -- Skill set    
+ ELSE IF @QueryType='Get_Skill_set'    
+  SELECT a.*,b.Category_name FROM tbl_skill_set as a inner join tbl_skill_category as b on a.Category_id=b.Id where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1     
+  order by a.Skill asc    
+ ELSE IF @QueryType='Get_Skill_set_result'    
+ BEGIN    
+  IF @Parameter2 = 'All'    
+   BEGIN    
+    SELECT a.*,b.Category_name FROM tbl_skill_set as a inner join tbl_skill_category as b on a.Category_id=b.Id     
+    where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1 order by a.Skill asc    
+   END    
+  ELSE     
+   BEGIN    
+    SELECT a.*,b.Category_name FROM tbl_skill_set as a inner join tbl_skill_category as b on a.Category_id=b.Id     
+    where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1 and a.Category_id=@Parameter2 order by a.Skill asc    
+   END    
+ END    
+ ELSE IF @QueryType='Edit_skill_set'    
+  SELECT * FROM tbl_skill_set where ID=@Parameter    
+ --Machinewise skill    
+ ELSE IF @QueryType='Get_skills'    
+ BEGIN      
+  --SELECT '0' as 'ID',id as 'Skill_id',Skill 'Skill_name','NA' as 'Skill_rank' FROM tbl_skill_set where PlantCode=@Parameter and CompanyCode=@Parameter1 and Category_id=@Parameter2    
+ SELECT '0' as 'ID',id as 'Skill_id',Skill 'Skill_name',    
+ (select Skill_rank from tbl_machinewise_skill_list as aa inner join tbl_machinewise_skill as bb on aa.Ref_id=bb.Ref_id     
+ where aa.Skill_id=a.Id and bb.Category_id=a.Category_id) as 'Skill_rank' FROM tbl_skill_set as a where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1 and a.Category_id=@Parameter2    
+ END    
+ ELSE IF @QueryType='Get_machine_skill'    
+  SELECT a.*,b.AssetName as 'Machine_name',c.Category_name FROM tbl_machinewise_skill as a inner join tbl_Assets as b on a.Machine_id=b.AssetID    
+  inner join tbl_skill_category as c on a.Category_id=c.Id    
+  where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1     
+ ELSE IF @QueryType='Edit_machine_skill'    
+ BEGIN    
+  SELECT * FROM tbl_machinewise_skill where Ref_id=@Parameter    
+  SELECT a.*,b.Skill as 'skill_name' FROM tbl_machinewise_skill_list as a inner join tbl_skill_set as b on a.Skill_id=b.Id  where a.Ref_id=@Parameter    
+ END    
+ --Operatorwise skill    
+ ELSE IF @QueryType='Get_operatorwise_skill'    
+  SELECT a.*,b.OperatorName 'Operator_name',c.Category_name FROM tbl_operatorwise_skill as a inner join tbl_Operator as b on a.Operator_id=b.OP_ID    
+  inner join tbl_skill_category as c on a.Category_id=c.Id where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1     
+ ELSE IF @QueryType='Edit_operatorwise_skill'    
+ BEGIN    
+  SELECT * FROM tbl_operatorwise_skill where Ref_id=@Parameter    
+  SELECT a.*,b.Skill as 'skill_name' FROM tbl_operatorwise_skill_list as a inner join tbl_skill_set as b on a.Skill_id=b.Id  where a.Ref_id=@Parameter    
+ END    
+ ELSE IF @QueryType='Get_operator_skills'    
+ BEGIN    
+  --SELECT '0' as 'ID',id as 'Skill_id',Skill 'Skill_name','NA' as 'Skill_rank' FROM tbl_skill_set where PlantCode=@Parameter and CompanyCode=@Parameter1 and Category_id=@Parameter2    
+  SELECT '0' as 'ID',id as 'Skill_id',Skill 'Skill_name',    
+        (select Skill_rank from tbl_operatorwise_skill_list as aa inner join tbl_operatorwise_skill as bb on aa.Ref_id=bb.Ref_id     
+  where aa.Skill_id=a.Id and bb.Category_id=a.Category_id) as 'Skill_rank' FROM tbl_skill_set as a where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1 and a.Category_id=@Parameter2    
+ END    
+ --Operator Schedule    
+ ELSE IF @QueryType='Operator_schedule_list'    
+  SELECT a.*,b.AssetName,c.OperatorName,ss.ShiftName,CONVERT(varchar,FromDate,105) 'FDate',CONVERT(varchar,ToDate,105) 'TDate' FROM tbl_operator_schedule as a inner join tbl_Assets as b on a.Machine=b.AssetID     
+  inner join tbl_Operator as c on a.Operator=c.OP_ID inner join ShiftSetting AS ss on a.Shift=ss.ID where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1     
+ ELSE IF @QueryType='Operator_schedule_result'    
+  SELECT a.*,b.AssetName,c.OperatorName,ss.ShiftName,CONVERT(varchar,FromDate,105) 'FDate',CONVERT(varchar,ToDate,105) 'TDate' FROM tbl_operator_schedule as a inner join tbl_Assets as b on a.Machine=b.AssetID     
+  inner join tbl_Operator as c on a.Operator=c.OP_ID inner join ShiftSetting AS ss on a.Shift=ss.ID where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1  and a.Machine=@Parameter2 and a.Operator=@Parameter3    
+ ELSE IF @QueryType='Edit_schedule'    
+  SELECT *,CONVERT(varchar,FromDate,105) 'FDate',CONVERT(varchar,ToDate,105) 'TDate' FROM tbl_operator_schedule where Id=@Parameter    
+ ELSE IF @QueryType='Get_last_schedule'    
+  SELECT TOP(1) * FROM tbl_operator_schedule where Ref_id=@Parameter order by ID Desc    
+ --Operator Absent    
+ ELSE IF @QueryType='Get_absent'    
+  SELECT *,CONVERT(varchar,Absent_Date,105) 'ADate',c.OperatorName FROM tbl_absent_list as a inner join tbl_Operator as c on a.Operator=c.OP_ID    
+  where a.PlantCode=@Parameter and a.CompanyCode=@Parameter1     
+ ELSE IF @QueryType='Edit_absent'    
+  SELECT *,CONVERT(varchar,Absent_Date,105) 'ADate',c.OperatorName FROM tbl_absent_list as a inner join tbl_Operator as c on a.Operator=c.OP_ID    
+  where Id=@Parameter    
+    
+ ELSE IF @QueryType='Get_AssetDevice'    
+  BEGIN    
+   SELECT * FROM tbl_assets WHERE AssetID=@Parameter and CompanyCode=@Parameter1 and PlantCode=@Parameter2 and FunctionName =@Parameter3    
+  END    
+ ELSE IF @QueryType='Get_alarm_details'    
+ BEGIN    
+  SELECT A.Alarm_ID,A.A_ID,A.Alarm_Description,B.FunctionName,B.AssetName,ISNULL(C.FileName,'-') 'FileName' FROM AlarmTable_Setting AS A      
+  INNER JOIN tbl_Assets AS b ON A.Machine_Code=b.AssetID and A.Line_Code=B.FunctionName and A.CompanyCode=B.CompanyCode     
+  and A.PlantCode=B.PlantCode  LEFT JOIN tbl_UploadManual as C ON A.Help=C.Unique_id    
+  WHERE A.CompanyCode=@Parameter AND A.PlantCode=@Parameter1 and A.Line_Code=@Parameter2 AND A.Machine_Code=@Parameter3    
+ END    
+    
+END

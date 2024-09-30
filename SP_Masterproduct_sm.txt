@@ -1,0 +1,59 @@
+CREATE PROCEDURE [dbo].[SP_Masterproduct]    
+ @QueryType nvarchar(25),    
+ @M_ID int=null,    
+ @Variant_Code nvarchar(150)=null,    
+ @VariantName nvarchar(150),    
+ @VariantDescription nvarchar(150),    
+ @OperationName nvarchar(150),    
+ @Machine_Code nvarchar(150),    
+ @RecipeName nvarchar(150),    
+ @CycleTime nvarchar(150),    
+ @CompanyCode nvarchar(150),    
+ @PlantCode nvarchar(150),    
+ @LineCode nvarchar(150),    
+ @Cost decimal(10,2),    
+ @autocycletime decimal(10,2)=null,    
+ @Ideal_cycletime decimal(10,2)=null,    
+ @No_of_fixtures decimal(10,2)=null,    
+ @manualcycletime decimal(10,2)=null,    
+ @Imgdata VARBINARY(max),    
+ @SQLReturn nvarchar(50) output      
+AS    
+BEGIN     
+ SET NOCOUNT ON;    
+ Declare @result nvarchar(50)    
+ Set @result=''    
+ If @QueryType='Insert'    
+ Begin    
+  If not exists(Select * From tbl_MasterProduct where (VariantName=@VariantName) AND CompanyCode=@CompanyCode and PlantCode=@PlantCode and Line_Code=@LineCode)    
+  Begin    
+   Insert Into tbl_MasterProduct(Variant_Code,VariantName,VariantDescription,OperationName,Machine_Code,RecipeName,CycleTime,CompanyCode,Plantcode,Cost,Line_Code,Ideal_cycletime,No_of_fixtures,Manual_CycleTime,Auto_CycleTime,ImageData)    
+   Values(@Variant_Code,@VariantName,@VariantDescription,@OperationName,@Machine_Code,@RecipeName,@CycleTime,@CompanyCode,@PlantCode,@Cost,@LineCode,@Ideal_cycletime,@No_of_fixtures,@manualcycletime,@autocycletime,@Imgdata)    
+    set @result='Inserted'     
+  END    
+  Else If exists(Select * From tbl_MasterProduct where Variant_Code=@Variant_Code  AND CompanyCode=@CompanyCode and PlantCode=@PlantCode and Line_Code=@LineCode)    
+    BEGIN    
+     set @result='Already Variant_Code'    
+    END    
+    Else     
+     BEGIN    
+      set @result='Already VariantName'    
+     END     
+ End       
+ Else If @QueryType='Update'    
+ Begin    
+  If not exists(Select * From tbl_MasterProduct where VariantName=@VariantName and Machine_Code=@Machine_Code AND CompanyCode=@CompanyCode and PlantCode=@PlantCode AND  Variant_Code!=@Variant_Code and Line_Code=@LineCode)    
+    BEGIN    
+    Update tbl_MasterProduct set VariantName=@VariantName,VariantDescription=@VariantDescription,OperationName=@OperationName,Machine_Code=@Machine_Code,RecipeName=@RecipeName,    
+    CycleTime=@CycleTime,Cost=@Cost,Line_Code=@LineCode,Ideal_cycletime=@Ideal_cycletime,No_of_fixtures=@No_of_fixtures,Manual_CycleTime=@manualcycletime,Auto_CycleTime=@autocycletime,ImageData=@Imgdata    
+       
+    Where Variant_Code=@Variant_Code and Machine_Code=@Machine_Code AND CompanyCode=@CompanyCode and PlantCode=@PlantCode    
+     set @result='Updated'    
+    END    
+   Else     
+      BEGIN    
+       set @result='Already VariantName'    
+      END    
+ End    
+ set @SQLReturn=@result    
+END
